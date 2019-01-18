@@ -1,0 +1,544 @@
+<html>
+<head>
+<title>Prueba</title>
+<style>
+.container1 input[type=text] {
+padding:5px 0px;
+margin:5px 5px 5px 0px;
+}
+
+
+.agregar_field
+{
+    background-color: #1c97f3;
+    border: none;
+    color: white;
+    padding: 8px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+	border:1px solid #186dad;
+
+}
+
+input{
+    border: 1px solid #1c97f3;
+    width: 260px;
+    height: 40px;
+	margin-bottom:14px;
+}
+
+.delete{
+    background-color: #fd1200;
+    border: none;
+    color: white;
+    padding: 5px 15px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 14px;
+    margin: 4px 2px;
+    cursor: pointer;
+
+}
+</style>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+<script name="add_fields_js" id = "generar_fields">
+    var x =1;
+
+
+    //funcion que permite agregar campos de texto dinamicamente con un id unico para poder usarlo luego;
+$(document).ready(function() {
+    var max_fields      = 100;
+    var wrapper         = $(".container1"); 
+    var add_button      = $(".agregar_field"); 
+      
+
+    $(add_button).click(function(e){ 
+        e.preventDefault();
+        if(x < max_fields){ 
+              x++; 
+            
+            $(wrapper).append('<div class="variable'+x+'"><input type="text" id="variable' + x + '" placeholder="Inserte ruta ejm(AB5)" maxlength="3" /><a href="#" class="delete">Eliminar</a></div>'); //agregar campo de texto dinamicamentes
+        }
+		else
+		{
+		alert('Maximo de rutas = ' + max_fields) //alerta en caso se generen demasiados campo de texto
+		}
+    });
+
+   
+    
+    $(wrapper).on("click",".delete", function(e){ 
+        e.preventDefault(); $(this).parent('div').remove(); x--; //boton que sirve para eliminar cada campo de texto creado
+    })
+});
+
+
+
+
+//script con todas las funcionalidades
+</script>
+
+<script type="text/javascript">
+
+    //con esta funcion se obtiene el evento de el click en el boton de procesar
+    $(document).ready(function(){
+        var procesar        = $(".procesar_datos")  
+        var list = [];  //lista que servira para filtrar el recorrido
+        var list2 = [];  //lista donde se almacenara las listas filtradas
+        var cont = 0   //contador que sirve para hacer una cantidad dada de iteraciones
+        var minimo = 0;  //variable donde almacenaremos el valor minimo de recorrido
+        var visitado = new Array() ;    //string para evitar acceder a un bucle infinito si se tiene un grafo con ciclos
+        var fistTime = true;        //se usa para el caso CC 
+
+
+
+        //realizar lo solicitado
+
+        $(procesar).click(function(e){ 
+            e.preventDefault();
+            
+
+           for(var i=0;i<5;i++){
+             visitado[i] = new Array();
+            for(var j=0;j<5;j++){
+               visitado[i][j] = 0;
+            }
+           }
+
+
+            //obtener_matriz_adyacencia(Tamaño x) nos permite obtener la matriz asociada al grafo.
+           var matriz = obtener_matriz_adyacencia(x);
+           var recorrido = obtener_ruta("ABC",matriz,1); //recorrido de A-B-C           
+           document.getElementById("div1").innerHTML = "#1 "+ recorrido; //mostramos en pantalla el resultado
+
+           var recorrido2 = obtener_ruta("AD",matriz,2);
+           document.getElementById("div2").innerHTML = "#2 "+recorrido2;  
+
+           var recorrido3 = obtener_ruta("ADC",matriz,3);
+           document.getElementById("div3").innerHTML = "#3 " +recorrido3;
+
+           var recorrido4 = obtener_ruta("AEBCD",matriz,3);
+           document.getElementById("div4").innerHTML = "#4 "+recorrido4;
+
+           var recorrido5 = obtener_ruta("AED",matriz,3);
+           document.getElementById("div5").innerHTML = "#5 "+recorrido5;
+
+            valores_defectos(); //para realizar otra funcion se reinicia por defecto las listas y los contadores
+
+            //obtener_caminos_recorridos(Matriz matriz,Inicio inicio,Final final,Pasos pasos, Int constante,tipo)
+            obtener_caminos_recorridos(matriz,2,2,3,3,2); 
+            document.getElementById("div6").innerHTML = "#6 " +list2.length;
+            valores_defectos();
+
+            obtener_caminos_recorridos(matriz,0,2,4,4,1);            
+            document.getElementById("div7").innerHTML = "#7 " +list2.length;
+            valores_defectos();
+
+            list.push(0);
+            //camino_mas_corto(Matrz matriz,Inicio inicio,Final final)
+            camino_mas_corto(matriz,0,2);
+            var min = calcular_minimo(matriz); //funcion calcula el minimo de los recorridos
+            document.getElementById("div8").innerHTML = "#8 " +min;
+            list.pop();
+
+            valores_defectos();
+
+            list.push(1);
+            camino_mas_corto(matriz,1,1)
+            var min2 = calcular_minimo(matriz);
+            document.getElementById("div9").innerHTML = "#9 " +min;      
+            list.pop();
+
+            valores_defectos();
+
+            list.push(2);
+            camino_mas_corto(matriz,2,2)           
+            list.pop();
+
+            var cantidad = cantidad_mayor_30(matriz);
+            document.getElementById("div10").innerHTML = "#10 " + cantidad;
+
+
+        
+        });
+
+
+//funcion que encuentra el recorrido con un peso menor o igual  a 30
+function cantidad_mayor_30(matriz){
+    var listX = new Array(list2.length);
+    var contador = 0;
+
+    for(var i = 0;i<list2.length;i++){
+        listX[i] = 0;
+    }
+
+    for(var i=0;i<list2.length;i++){
+       for(var j=0;j<list2[i].length-1;j++){
+            var posX = list2[i][j]
+            var posY = list2[i][j+1]
+            listX[i] += parseInt(matriz[posX][posY]); 
+        }
+    }
+ contador++;
+    console.log(listX);
+
+    for(i=0;i<listX.length;i++){
+        if(listX[i] <= 30){
+            contador++;
+        }
+    }
+
+    return contador;
+}
+
+//funcion que restablece las listas a valores por defecto;
+
+function valores_defectos(){
+        cont = 0;
+        list = [];
+        list2 = [];
+        for(var i=0;i<5;i++){
+             visitado[i] = new Array();
+            for(var j=0;j<5;j++){
+               visitado[i][j] = 0;
+            }
+           }
+        fistTime = true;
+}
+
+
+//funcion que calcula el minimo recorrido
+function calcular_minimo(matriz){
+    var listX = new Array(list2.length);
+    for(var i = 0;i<list2.length;i++){
+        listX[i] = 0;
+    }
+
+    for(var i=0;i<list2.length;i++){
+       for(var j=0;j<list2[i].length-1;j++){
+            var posX = list2[i][j]
+            var posY = list2[i][j+1]
+            listX[i] += parseInt(matriz[posX][posY]); 
+        }
+    }
+
+    var min = Math.min.apply(null,listX);
+
+    return min;
+}
+
+
+//funcion que halla el camino mas corto en un recorrido
+
+
+function camino_mas_corto(matriz,empieza,termina){
+        
+        for(var i =0 ;i<5 ; i++){
+
+            if(matriz[empieza][i] != 0 && i != empieza){
+
+                if(fistTime){
+                    fistTime =false;
+                    list.push(i);      
+                    //visitado[empieza][i] = 1;
+                    camino_mas_corto(matriz, i, termina);
+                    var x = list.pop();
+                    visitado[empieza][i] = 0;
+                    if(x == termina){
+                        list.push(termina);
+                        list2[cont] = list.slice();
+                        list.pop();
+                        cont++; 
+                    }  
+                }
+
+                if(i==0){
+                    list.push(i);      
+                    //visitado[empieza][i] = 1;
+                    camino_mas_corto(matriz, i, termina);
+                    var x = list.pop();
+                    visitado[empieza][i] = 0;
+                    if(x == termina){
+                        list.push(termina);
+                        list2[cont] = list.slice();
+                        list.pop();
+                        cont++; 
+                    } 
+                }
+
+
+                if(empieza != termina && visitado[empieza][i] != 1){
+
+                list.push(i);      
+                visitado[empieza][i] = 1;
+                camino_mas_corto(matriz, i, termina);
+                var x = list.pop();
+                visitado[empieza][i] = 0;
+                if(x == termina){
+                    list.push(termina);
+                    list2[cont] = list.slice();
+                    list.pop();
+                    cont++;  
+                }
+
+            }else{
+               
+            }
+            }
+        }
+}        
+
+
+
+
+
+
+function obtener_caminos_recorridos(mat,inicio,fin,numPasos,constante,tipo){
+            list.push(inicio);
+            verCaminos(mat,inicio,fin,numPasos,constante,tipo)//1 para caminos iguales que - 2 para caminos mayor o igual que - 3 para caminos menor que
+            eliminar_duplicados(list2);
+            list.pop();
+}
+
+
+    //funcion para obtener la posicion en la matriz de adyacencia
+        function posicion_in_matriz(ciudadX,ciudadY){
+            var pos1 = 0;
+            var pos2 = 0;
+             switch (ciudadX.toLowerCase()) {
+             case "a":
+                 pos1=0;
+                 break;
+            case "b":
+                 pos1=1;
+                 break;
+            case "c":
+                 pos1=2;
+                 break;
+            case "d":
+                 pos1=3;
+                 break; 
+            case "e":
+                 pos1=4;
+                 break;                 
+             default:
+                 alert("parametros invalidos");
+                 break;
+         }
+         switch (ciudadY.toLowerCase()) {
+             case "a":
+                 pos2=0;
+                 break;
+            case "b":
+                  pos2=1;
+                 break;
+            case "c":
+                  pos2=2;
+                 break;
+            case "d":
+                  pos2=3;
+                 break; 
+            case "e":
+                  pos2=4;
+                 break;                 
+             default:
+                 alert("parametros invalidos");
+                 break;                    
+
+         }
+         return {
+        posX: pos1, 
+        posY: pos2
+            }
+        }
+
+
+        //funcion que obtiene todos los caminos respecto a numero de paradas
+ 
+    function verCaminos(matriz,empieza,termina,numParadas,constante,variable){
+
+        
+        for(var i =0 ;i<5 ; i++){
+
+           
+
+            if(matriz[empieza][i] != 0 && i != empieza){
+                if(numParadas > 0){
+                list.push(i);
+
+                
+
+                numParadas--;
+
+                verCaminos(matriz, i, termina, numParadas, constante,variable);
+                numParadas++;
+
+                list.pop();
+
+                if(matriz[empieza][termina] != 0){
+                        list.push(termina);
+
+                    if(variable == 1){
+                        if(list.length == constante+1){
+                            list2[cont] = list.slice();  
+                             cont++;                    
+                        }
+                    }else if (variable == 2){
+                        if(list.length <= constante+1){
+                             list2[cont] = list.slice();
+                              cont++;
+                        }
+                    }else if(variable == 3){
+                        if(list.length > constante +1){
+                             list2[cont] = list.slice();
+                              cont++;
+                        }
+                    }
+                   
+                       list.pop();
+                }
+
+
+
+            }else{
+
+            }
+            }
+        }
+      
+        
+    }
+
+//eliminamos los duplicados que por error se añaden a la lista
+function eliminar_duplicados(listX){
+    
+    var actual = listX[0];
+    var x = 0;
+    var indice;
+    while(x < listX.length-1){
+        indice = listX.indexOf(actual);
+        if(indice > -1){
+            listX.splice(indice,1);
+        }else{
+            x++;
+            actual = listX[x];
+        }
+
+    }
+}
+
+
+//obtenemos las posiciones de la conexion entre nodos del grafo
+
+function obtener_ruta(ruta,matriz,numOutput){
+    var tam = ruta.length;
+    var position = new Array(tam);
+    var posX;
+
+
+    for(var i=0;i<ruta.length;i++){
+        var x = ruta.substring(i,i+1);
+        var result = posicion_in_matriz(x, x)
+        posX = result.posX;
+        position[i] = posX;
+    }
+    console.log("position = " + position);
+    var posInicial = position[0];
+    var recorrido = 0;
+    for(var i=0;i<position.length-1;i++){
+        var posX = position[i]
+        var posY = position[i+1]
+        if(matriz[posX][posY]==0){
+            recorrido = "no hay ruta";
+            break;
+        }        
+        recorrido += parseInt(matriz[posX][posY]);
+        
+    }
+    console.log(recorrido);
+    //document.getElementById("demo").innerHTML = numOutput+":" + recorrido; 
+    return recorrido;
+}
+
+//funcion para obtener la matriz de adyacencia
+function obtener_matriz_adyacencia(cantidad){
+    var matriz_adyacencia = new Array(5);
+    for (var i=0;i< matriz_adyacencia.length;i++){
+        matriz_adyacencia[i]= new Array(5);
+        for(var j=0;j<matriz_adyacencia.length;j++){
+            matriz_adyacencia[i][j] = 0;
+        }
+    }
+
+
+    //generamos la matriz adyacente del grafo ingresado
+
+    for(var i=0;i<cantidad;i++){
+         var texto_ingresado = document.getElementById("variable"+(i+1)).value
+
+         var ciudadX = texto_ingresado.substring(0,1);
+         var ciudadY = texto_ingresado.substring(1,2);
+         var ponderacion = texto_ingresado.substring(2,3);
+
+         var pos1 = 0;
+         var pos2 = 0;
+
+         var result = posicion_in_matriz(ciudadX, ciudadY);
+         pos1 = result.posX;
+         pos2 = result.posY;
+
+
+         if(pos1 == pos2){
+            matriz_adyacencia[pos1][pos2] = 0;
+            alert("parametros errones: " + x + " no es un camino valido");
+            return;
+         }
+         else{
+            if(matriz_adyacencia[pos1][pos2] == 0){
+                matriz_adyacencia[pos1][pos2] = ponderacion;    
+            }else{
+                alert("ya existe un camino para " + ciudadX+""+ciudadY);
+                return;
+            }
+            
+         }
+         
+    }    
+
+     return matriz_adyacencia;
+    }  
+
+    })
+</script>
+
+
+
+</head>
+<body>
+<div class="container1">
+    
+    <button class="agregar_field">Agregar ruta &nbsp; <span style="font-size:16px; font-weight:bold;">+ </span></button>
+    <div class="var1""><input type="text"  id="variable1" placeholder="Inserte ruta ejm(AB5)" maxlength="3"></div>
+</div>
+<div class="container2">
+    <button class="procesar_datos">Ejecutar &nbsp; <span style="font-size:16px; font-weight:bold;">+ </span></button>
+   
+   <p id="div1"></p>
+   <p id="div2"></p>
+   <p id="div3"></p>
+   <p id="div4"></p>
+   <p id="div5"></p>
+   <p id="div6"></p>
+   <p id="div7"></p>
+   <p id="div8"></p>
+   <p id="div9"></p>
+   <p id="div10"></p>
+
+</div>
+</body>
+</html>
